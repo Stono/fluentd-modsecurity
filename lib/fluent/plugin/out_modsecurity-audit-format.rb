@@ -23,7 +23,14 @@ module Fluent::Plugin
     def process(tag, es)
       es.each do |time, record|
         modsecRecord = convertToModsecRecord(record['message'])
-        router.emit(@tag, time, modsecRecord)
+
+        # Strip out each auditLogTrailer message as a separate thing
+        modsecRecord.auditLogTrailer.each { |log|
+          record = modsecRecord.clone
+          record.delete('auditLogTrailer')
+          record.violation = log
+          router.emit(@tag, time, record)
+        }
       end
     end
 
